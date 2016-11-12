@@ -1,4 +1,4 @@
-# Buddy, your Cloudformation/ECS valet
+# Buddy, your Cloudformation/ECS valet :dog:
 
 Opinionated tools to manage your AWS infrastructure.
 
@@ -40,10 +40,10 @@ targets:
   production:
     cluster: production
     service: service-Service-1234567890JVM
-    task: HelloWorld
+    task: helloworld
     environment: production
 tasks:
-  HelloWorld:
+  helloworld:
     containers:
       - http
       - app
@@ -76,6 +76,32 @@ containers:
       command: ['celery', '-A', 'helloworld', 'worker', '-B', '-l', 'info']
     environment:
       [DATABASE_URL, REDIS_URL]
+
 $ bcluster deploy .aws/cluster.yaml production registry/myapp:latest a1b2c3d4
+Definition:
+[{'command': ['nginx', '-g', 'daemon off;'],
+  'cpu': 100,
+  ...
+]
+
+Register task
+Registered task: arn:aws:ecs:us-east-1:000000000000:task-definition/helloworld:123
+Deploying...
+Wait: deployment in progress
+arn:aws:ecs:us-east-1:000000000000:task-definition/helloworld:123 - PRIMARY - running: 0
+arn:aws:ecs:us-east-1:000000000000:task-definition/helloworld:122 - ACTIVE - running: 2
+
+Wait: deployment in progress
+arn:aws:ecs:us-east-1:000000000000:task-definition/helloworld:123 - PRIMARY - running: 0
+arn:aws:ecs:us-east-1:000000000000:task-definition/helloworld:122 - ACTIVE - running: 2
+
+Wait: deployment in progress
+arn:aws:ecs:us-east-1:000000000000:task-definition/helloworld:123 - PRIMARY - running: 2
+arn:aws:ecs:us-east-1:000000000000:task-definition/helloworld:122 - ACTIVE - running: 0
+
+Final state:
+...
+
+Success
 ```
 
