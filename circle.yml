@@ -1,0 +1,13 @@
+machine:
+  python:
+    version: 3.5.2
+
+dependencies:
+  override:
+    - pip install -U pip
+    - pip install -r requirements-test.txt
+    - pip install .
+
+test:
+  override:
+    - pytest

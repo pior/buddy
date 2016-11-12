@@ -18,5 +18,4 @@ setup(
             'bstack = buddy.command.stack:cli',
         ],
     },
-    tests_require=[],
 )
