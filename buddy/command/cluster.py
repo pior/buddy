@@ -1,7 +1,4 @@
-import copy
-import os
-import pprint
-import string
+from string import Template
 import sys
 import time
 
@@ -9,6 +6,7 @@ import click
 import yaml
 
 from buddy.client import EcsClient
+from buddy.command.utils import echo_action, echo_step, echo_error, failure
 
 
 class EcsServiceAction(object):
@@ -23,42 +21,35 @@ class EcsServiceAction(object):
         return response['services'][0]
 
     def _print_deployments_progress(self, state):
+        click.echo("\nWait: deployment in progress")
         for dep in state['deployments']:
             msg = ("%(taskDefinition)s - %(status)s - "
                    "running: %(runningCount)s")
-            print(msg % dep)
+            click.echo(msg % dep)
 
-    def _evaluate_deployments(self):
-        state = self._get_state()
-        if len(state['deployments']) > 1:
-            print("Wait: deployment in progress")
-            self._print_deployments_progress(state)
-            print("")
-            return False
-        return True
+    def _is_deployed(self, state):
+        return len(state['deployments']) < 2
 
     def _print_state(self):
         state = self._get_state()
         state['events'] = state['events'][0:15]
-        pprint.pprint(state)
-        print("")
-        sys.stdout.flush()
+        click.echo(yaml.dump(state))
 
     def get_active_task_definition(self):
         state = self._get_state()
         return state['taskDefinition']
 
-    def wait_for_deploy(self, timeout=300):
-        SLEEP = 5.0
-        STEPS = int(timeout / SLEEP)
+    def wait_for_deploy(self, timeout=300, poll_interval=5.0):
+        STEPS = int(timeout / poll_interval)
+        deployed = False
         for _ in range(STEPS):
-            if self._evaluate_deployments():
+            state = self._get_state()
+            if not self._is_deployed(state):
                 deployed = True
                 break
-            deployed = False
-            time.sleep(SLEEP)
-
-        print("Final state:")
+            self._print_deployments_progress(state)
+            time.sleep(poll_interval)
+        click.echo("Final state:")
         self._print_state()
         return deployed
 
@@ -121,11 +112,11 @@ class Application(object):
         self._process_properties(props)
         return props
 
+    def _get_variables(self):
+        return {'build_rev': self.build_rev}
+
     def _interpolate_string(self, s):
-        variables = {'build_rev': self.build_rev}
-        click.echo('Interpolate: %s' % s)
-        template = string.Template(s)
-        return template.substitute(**variables)
+        return Template(s).substitute(**self._get_variables())
 
     def _process_properties(self, properties):
         for key, value in properties.items():
@@ -139,10 +130,6 @@ def read_app_cluster_config(path):
     with open(path) as fp:
         data = yaml.load(fp)
     return data
-
-
-def header(s, fg='green', bold=True):
-    click.secho(s, fg=fg, bold=bold)
 
 
 @click.group()
@@ -168,33 +155,29 @@ def deploy(app_config_file, target_name, image, build_rev, dry_run):
     click.echo(yaml.dump(task['containers']))
 
     if dry_run:
-        sys.exit('Dry-run, stop now.')
+        echo_error("Dry-run!")
+        raise click.Abort()
 
-    header('Register task...')
+    echo_action('Register task...')
     resp = ecs.register_task_definition(family=app.task_name,
                                         containers=task['containers'])
     task_definition_arn = resp['taskDefinition']['taskDefinitionArn']
-    header(
-        'Registered task: %s' % task_definition_arn,
-        fg='green', bold=True,
-    )
+    echo_step('Registered task: %s' % task_definition_arn)
 
-    header('Updating service %s' % app.service_name)
+    echo_action('Updating service %s' % app.service_name)
     ecs.update_service(app.cluster_name, app.service_name, task_definition_arn)
-    header('Updated')
+    echo_step('Updated')
 
-    header('Deploying', fg='yellow')
+    echo_step('Deploying', fg='yellow')
     deployed = ecs_service.wait_for_deploy()
     if not deployed:
-        print("Deployment failed (timeout)")
-        sys.exit(1)
+        failure("Deployment failed (timeout)")
 
     active_task_definition = ecs_service.get_active_task_definition()
     if active_task_definition != task_definition_arn:
-        print("Deployment failed (active: %s)" % active_task_definition)
-        sys.exit(1)
+        failure("Deployment failed (active: %s)" % active_task_definition)
 
-    print("Success")
+    echo_step("Success")
 
 
 cli.add_command(deploy)
