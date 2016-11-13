@@ -9,7 +9,7 @@ as yaml files.
 
 Examples:
 
-```shell
+```
 $ bstack list
 ...
 
@@ -34,7 +34,7 @@ $ bstack delete helloworld
 
 Deploy and manage services on AWS ECS.
 
-```shell
+```
 $ cat .aws/cluster.yaml
 targets:
   production:
@@ -105,3 +105,19 @@ Final state:
 Success
 ```
 
+
+## Development
+
+Running tests
+
+```
+$ git clone git@github.com:pior/buddy.git
+...
+$ mkvirtualenv buddy -p python3
+...
+$ pip install -U -r requirements-test.txt
+...
+$ pip install -e .
+...
+$ pytest
+```
