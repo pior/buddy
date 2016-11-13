@@ -16,6 +16,7 @@ classifiers = [
     'Topic :: Software Development',
 ]
 
+
 entry_points = {
     'console_scripts': [
         'bcluster = buddy.command.cluster:cli',

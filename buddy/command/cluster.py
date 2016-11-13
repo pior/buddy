@@ -1,5 +1,4 @@
 from string import Template
-import sys
 import time
 
 import click
@@ -33,7 +32,7 @@ class EcsServiceAction(object):
     def _print_state(self):
         state = self._get_state()
         state['events'] = state['events'][0:15]
-        click.echo(yaml.dump(state))
+        click.echo(yaml.safe_dump(state))
 
     def get_active_task_definition(self):
         state = self._get_state()
@@ -54,6 +53,14 @@ class EcsServiceAction(object):
         return deployed
 
 
+def cloudwatch_log_configurator(context, properties):
+    build_rev = context.get('build_rev')
+    options = properties.get('logConfiguration', {}).get('options', {})
+    if build_rev and 'awslogs-stream-prefix' not in options:
+        options['awslogs-stream-prefix'] = build_rev
+    return properties
+
+
 class Application(object):
 
     def __init__(self, data, target_name, image, build_rev):
@@ -61,6 +68,8 @@ class Application(object):
         self.target_name = target_name
         self.image = image
         self.build_rev = build_rev
+        self.context = {'build_rev': self.build_rev}
+        self.configurators = [cloudwatch_log_configurator]
 
     @property
     def target(self):
@@ -109,26 +118,17 @@ class Application(object):
                 {'name': vname, 'value': self._environment[vname]}
                 for vname in environment
             ]
-        self._process_properties(props)
-        return props
-
-    def _get_variables(self):
-        return {'build_rev': self.build_rev}
-
-    def _interpolate_string(self, s):
-        return Template(s).substitute(**self._get_variables())
+        return self._process_properties(props)
 
     def _process_properties(self, properties):
-        for key, value in properties.items():
-            if isinstance(value, dict):
-                properties[key] = self._process_properties(value)
-            if isinstance(value, (str, unicode)):
-                properties[key] = self._interpolate_string(value)
+        for configurator in self.configurators:
+            properties = configurator(self.context, properties)
+        return properties
 
 
 def read_app_cluster_config(path):
     with open(path) as fp:
-        data = yaml.load(fp)
+        data = yaml.safe_load(fp)
     return data
 
 
@@ -152,7 +152,7 @@ def deploy(app_config_file, target_name, image, build_rev, dry_run):
     ecs_service = EcsServiceAction(ecs, app.cluster_name, app.service_name)
 
     click.secho('Definition:')
-    click.echo(yaml.dump(task['containers']))
+    click.echo(yaml.safe_dump(task['containers']))
 
     if dry_run:
         echo_error("Dry-run!")
@@ -168,7 +168,7 @@ def deploy(app_config_file, target_name, image, build_rev, dry_run):
     ecs.update_service(app.cluster_name, app.service_name, task_definition_arn)
     echo_step('Updated')
 
-    echo_step('Deploying', fg='yellow')
+    echo_step('Deploying')
     deployed = ecs_service.wait_for_deploy()
     if not deployed:
         failure("Deployment failed (timeout)")
