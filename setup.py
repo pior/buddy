@@ -26,7 +26,7 @@ entry_points = {
 
 setup(
     name='buddy',
-    version='0.0.1',
+    version='0.0.2',
 
     description='Buddy, your Cloudformation/ECS valet',
     license='MIT License',
