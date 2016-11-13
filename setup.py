@@ -29,6 +29,8 @@ setup(
     version='0.0.2',
 
     description='Buddy, your Cloudformation/ECS valet',
+    long_description=open('README.rst').read(),
+    keywords='aws cloudformation ecs deployment',
     license='MIT License',
     platforms='Linux',
     classifiers=classifiers,
