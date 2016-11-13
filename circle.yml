@@ -3,15 +3,13 @@ machine:
     version: 3.5.2
 
 dependencies:
-  override:
+  pre:
     - git config --global user.email pior@pbastida.net
     - git config --global user.name 'Pior Bastida (CircleCI)'
-    - git config --global push.default matching
-
-    - pip install -U pip wheel
-    - pip install -U bumpversion twine
+  override:
+    - pip install -U wheel bumpversion twine
     - pip install -r requirements-test.txt
-    - pip install .
+    - pip install -e .
 
 test:
   override:
@@ -19,9 +17,9 @@ test:
 
 deployment:
   pypi:
-    branch: master
+    branch: pypi
     commands:
       - bumpversion patch --commit --tag
-      - git push origin master --tags
+      - git push origin pypi --tags
       - python setup.py sdist bdist_wheel
       - twine upload -u $PYPI_USERNAME -p $PYPI_PASSWORD dist/*
