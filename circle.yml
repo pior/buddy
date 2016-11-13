@@ -21,5 +21,6 @@ deployment:
     commands:
       - bumpversion patch --commit --tag
       - git push origin pypi --tags
+      - git push origin master --tags
       - python setup.py sdist bdist_wheel
       - twine upload -u $PYPI_USERNAME -p $PYPI_PASSWORD dist/*
