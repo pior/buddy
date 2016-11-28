@@ -1,6 +1,10 @@
 import boto3
 
 
+def get_aws_region_name(**session_args):
+    return boto3.session.Session(**session_args).region_name
+
+
 class CfnClient(object):
     def __init__(self, **session_args):
         session = boto3.session.Session(**session_args)
@@ -82,8 +86,8 @@ class CfnClient(object):
 
 class EcsClient(object):
     def __init__(self, **session_args):
-        session = boto3.session.Session(**session_args)
-        self.boto = session.client(u'ecs')
+        self.session = boto3.session.Session(**session_args)
+        self.boto = self.session.client(u'ecs')
 
     def describe_services(self, cluster_name, service_name):
         return self.boto.describe_services(
