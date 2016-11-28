@@ -1,11 +1,6 @@
 machine:
   python:
     version: 3.5.2
-  environment:
-    GIT_AUTHOR_NAME: Pior Bastida
-    GIT_AUTHOR_EMAIL: pior@pbastida.net
-    GIT_COMITTER_NAME: Pior Bastida
-    GIT_COMITTER_EMAIL: pior@pbastida.net
 
 test:
   pre:
@@ -19,6 +14,8 @@ deployment:
     branch: pypi
     commands:
       - pip install -U wheel bumpversion twine
+      - git config --global user.email "pior@pbastida.net"
+      - git config --global user.name "Pior Bastida (CircleCI)"
       - bumpversion patch --commit --tag
       - git push origin pypi --tags
       - git checkout master
