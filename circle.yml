@@ -14,6 +14,10 @@ dependencies:
 test:
   override:
     - pytest
+    - pylama
+  post:
+    - coverage report > $CIRCLE_ARTIFACTS/coverage.txt
+
 
 deployment:
   pypi:

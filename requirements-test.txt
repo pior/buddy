@@ -1,3 +1,5 @@
 moto
 pytest
 pytest-cov
+coverage
+pylama

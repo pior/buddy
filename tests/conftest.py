@@ -1,4 +1,3 @@
-import os
 import json
 
 from _pytest.monkeypatch import monkeypatch
