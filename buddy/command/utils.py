@@ -14,6 +14,8 @@ def echo_error(s):
 
 
 def failure(s, exit_code=1):
+    if isinstance(s, Exception):
+        s = str(s)
     exc = click.ClickException(s)
     exc.exit_code = exit_code
     raise exc

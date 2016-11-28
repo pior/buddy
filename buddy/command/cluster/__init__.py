@@ -5,6 +5,7 @@ import yaml
 
 from buddy.client import EcsClient, get_aws_region_name
 from buddy.command.utils import echo_action, echo_step, echo_error, failure
+from .service import Target, DefinitionError
 
 
 class EcsServiceAction(object):
@@ -58,73 +59,6 @@ def retry_it(fn, timeout, interval=5):
         time.sleep(interval)
 
 
-def cloudwatch_log_configurator(context, properties):
-    config = properties.get('logConfiguration', {})
-    if config.get('logDriver') == 'awslogs':
-        options = {
-            'awslogs-group': context.get('task_name'),
-            'awslogs-region': context.get('aws_region'),
-            'awslogs-stream-prefix': context.get('build_rev'),
-        }
-        options.update(config.get('options', {}))
-        config['options'] = options
-    return properties
-
-
-class Target(object):
-
-    def __init__(self, data, target_name):
-        self.data = data
-        self.target_name = target_name
-
-        target_data = data['targets'][target_name]
-        self.cluster_name = target_data['cluster']
-        self.service_name = target_data['service']
-        self.task_name = target_data['task']
-        self.task = data['tasks'][self.task_name]
-
-        self.environment = {}
-        environment_name = target_data.get('environment')
-        if environment_name:
-            try:
-                plain_vars = data['environments'][environment_name]
-            except KeyError:
-                raise KeyError('Missing environment %s' % environment_name)
-            self.environment.update(**plain_vars)
-
-        self.container_definitions = self.data['containers']
-
-
-def get_task_containers(app, image, context):
-    def make(container_name):
-        return make_container_definition(
-            definition=app.container_definitions[container_name],
-            name=container_name,
-            image=image,
-            environment=app.environment,
-            context=context,
-        )
-    return [make(el) for el in app.task['containers']]
-
-
-def make_container_definition(definition, name, image, environment, context):
-    props = definition['properties'].copy()
-    props['name'] = name
-    props.setdefault('image', str(image))
-
-    def get_variables(name):
-        return {'name': name, 'value': environment[name]}
-
-    required_variables = definition.get('environment')
-    if required_variables:
-        props['environment'] = [get_variables(v) for v in required_variables]
-
-    for configurator in [cloudwatch_log_configurator]:
-        props = configurator(context, props)
-
-    return props
-
-
 def read_app_cluster_config(path):
     with open(path) as fp:
         data = yaml.safe_load(fp)
@@ -133,7 +67,6 @@ def read_app_cluster_config(path):
 
 def deploy_service(app, containers):
     ecs = EcsClient()
-    ecs_service = EcsServiceAction(ecs, app.cluster_name, app.service_name)
 
     echo_action('Register task...')
     resp = ecs.register_task_definition(family=app.task_name,
@@ -146,10 +79,12 @@ def deploy_service(app, containers):
         app.cluster_name, app.service_name, task_definition_arn)
     echo_step('Updated')
 
+    ecs_service = EcsServiceAction(ecs, app.cluster_name, app.service_name)
+
     echo_step('Waiting for deployment to complete (300s)')
     deployed = ecs_service.wait_for_deploy(timeout=300)
     if not deployed:
-        failure('Deployment didn\'t finish in 300s')
+        failure("Deployment didn't finish in 300s")
 
     active_task_definition_arn = ecs_service.get_active_task_definition_arn()
     if active_task_definition_arn != task_definition_arn:
@@ -179,7 +114,10 @@ def deploy(app_config_file, target_name, image, build_rev, dry_run):
     context['build_rev'] = build_rev
     context['aws_region'] = get_aws_region_name()
 
-    containers = get_task_containers(app, image, context)
+    try:
+        containers = app.get_task_containers(image, context)
+    except DefinitionError as err:
+        failure(err)
 
     click.secho('Definition:')
     click.echo(yaml.safe_dump(containers))

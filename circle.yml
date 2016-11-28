@@ -1,24 +1,22 @@
 machine:
   python:
     version: 3.5.2
-
-dependencies:
-  pre:
-    - git config --global user.email pior@pbastida.net
-    - git config --global user.name 'Pior Bastida (CircleCI)'
-  override:
-    - pip install -U wheel bumpversion twine
-    - pip install -r requirements-test.txt
-    - pip install -e .
+  environment:
+    GIT_AUTHOR_NAME: Pior Bastida (CircleCI)
+    GIT_AUTHOR_EMAIL: pior@pbastida.net
 
 test:
+  pre:
+    - pip install -r requirements-test.txt
   override:
-    - pytest
+    - pytest --cov-report xml:$CIRCLE_ARTIFACTS/pytest/coverage.xml --junitxml=$CIRCLE_TEST_REPORTS/pytest/junit.xml
+    - pylama
 
 deployment:
   pypi:
     branch: pypi
     commands:
+      - pip install -U wheel bumpversion twine
       - bumpversion patch --commit --tag
       - git push origin pypi --tags
       - git push origin master --tags
