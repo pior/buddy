@@ -5,25 +5,20 @@ machine:
     GIT_AUTHOR_NAME: Pior Bastida (CircleCI)
     GIT_AUTHOR_EMAIL: pior@pbastida.net
 
-dependencies:
-  pre:
-  override:
-    - pip install -U wheel bumpversion twine
-    - pip install -r requirements-test.txt
-    - pip install -e .
-
 test:
+  pre:
+    - pip install -r requirements-test.txt
   override:
     - pytest
     - pylama
   post:
     - coverage report > $CIRCLE_ARTIFACTS/coverage.txt
 
-
 deployment:
   pypi:
     branch: pypi
     commands:
+      - pip install -U wheel bumpversion twine
       - bumpversion patch --commit --tag
       - git push origin pypi --tags
       - git push origin master --tags
