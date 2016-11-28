@@ -7,6 +7,7 @@ import click
 import yaml
 
 from buddy.client import CfnClient
+from buddy.error import handle_exception
 
 
 class Template(object):
@@ -148,6 +149,7 @@ def cli():  # pragma: no cover
 
 
 @click.command(name='list')
+@handle_exception
 def _list():
     client = CfnClient()
     columns = ['StackName', 'CreationTime', 'LastUpdatedTime', 'StackStatus']
@@ -161,6 +163,7 @@ def _list():
 
 @click.command()
 @click.argument('stack')
+@handle_exception
 def create(stack):
     client = CfnClient()
     stack = Stack(client, stack)
@@ -171,6 +174,7 @@ def create(stack):
 
 @click.command()
 @click.argument('stack')
+@handle_exception
 def update(stack):
     client = CfnClient()
     stack = Stack(client, stack)
@@ -181,6 +185,7 @@ def update(stack):
 
 @click.command()
 @click.argument('stack')
+@handle_exception
 def events(stack):
     client = CfnClient()
     stack = Stack(client, stack)
@@ -201,6 +206,7 @@ def events(stack):
 
 @click.command()
 @click.argument('stack')
+@handle_exception
 def show(stack):
     client = CfnClient()
     stack = Stack(client, stack)
@@ -209,6 +215,7 @@ def show(stack):
 
 @click.command()
 @click.argument('stack')
+@handle_exception
 def resources(stack):
     client = CfnClient()
     stack = Stack(client, stack)
@@ -229,6 +236,7 @@ def resources(stack):
 
 @click.command()
 @click.argument('template-file')
+@handle_exception
 def validate(template_file):
     client = CfnClient()
     template = Template(client, template_file)
@@ -240,6 +248,7 @@ def validate(template_file):
 @click.command()
 @click.argument('stack')
 @click.option('--retain', multiple=True)
+@handle_exception
 def delete(stack, retain):
     client = CfnClient()
     stack = Stack(client, stack)

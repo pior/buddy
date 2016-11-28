@@ -6,6 +6,7 @@ import yaml
 from buddy.client import EcsClient, get_aws_region_name
 from buddy.command.utils import echo_action, echo_step, echo_error, failure
 from .service import Target, DefinitionError
+from buddy.error import handle_exception
 
 
 class EcsServiceAction(object):
@@ -104,6 +105,7 @@ def cli():  # pragma: no cover
 @click.argument('image')
 @click.argument('build-rev')
 @click.option('--dry-run', is_flag=True)
+@handle_exception
 def deploy(app_config_file, target_name, image, build_rev, dry_run):
     config = read_app_cluster_config(app_config_file)
 
