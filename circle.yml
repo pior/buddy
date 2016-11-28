@@ -2,8 +2,10 @@ machine:
   python:
     version: 3.5.2
   environment:
-    GIT_AUTHOR_NAME: Pior Bastida (CircleCI)
+    GIT_AUTHOR_NAME: Pior Bastida
     GIT_AUTHOR_EMAIL: pior@pbastida.net
+    GIT_COMITTER_NAME: Pior Bastida
+    GIT_COMITTER_EMAIL: pior@pbastida.net
 
 test:
   pre:
