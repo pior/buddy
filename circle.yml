@@ -9,10 +9,8 @@ test:
   pre:
     - pip install -r requirements-test.txt
   override:
-    - pytest
+    - pytest --cov-report xml:$CIRCLE_ARTIFACTS/pytest/coverage.xml --junitxml=$CIRCLE_TEST_REPORTS/pytest/junit.xml
     - pylama
-  post:
-    - coverage report > $CIRCLE_ARTIFACTS/coverage.txt
 
 deployment:
   pypi:
