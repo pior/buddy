@@ -27,7 +27,7 @@ entry_points = {
 
 setup(
     name='buddy',
-    version='0.0.2',
+    version='0.0.3',
 
     description='Buddy, your Cloudformation/ECS valet',
     long_description=open('README.rst').read(),
