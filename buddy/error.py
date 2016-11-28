@@ -7,6 +7,7 @@ from click import ClickException
 
 EXC_TO_ECHO = [
     botocore.exceptions.NoRegionError,
+    botocore.exceptions.ParamValidationError,
 ]
 
 
