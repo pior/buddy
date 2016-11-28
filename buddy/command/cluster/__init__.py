@@ -99,7 +99,7 @@ def cli():  # pragma: no cover
     pass
 
 
-@click.command()
+@cli.command()
 @click.argument('app-config-file')
 @click.argument('target-name')
 @click.argument('image')
@@ -128,6 +128,3 @@ def deploy(app_config_file, target_name, image, build_rev, dry_run):
         echo_error("Dry-run!")
     else:
         deploy_service(app, containers)
-
-
-cli.add_command(deploy)

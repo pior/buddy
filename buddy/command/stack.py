@@ -148,7 +148,7 @@ def cli():  # pragma: no cover
     pass
 
 
-@click.command(name='list')
+@cli.command(name='list')
 @handle_exception
 def _list():
     client = CfnClient()
@@ -161,7 +161,7 @@ def _list():
         )
 
 
-@click.command()
+@cli.command()
 @click.argument('stack')
 @handle_exception
 def create(stack):
@@ -172,7 +172,7 @@ def create(stack):
     echo_response(response)
 
 
-@click.command()
+@cli.command()
 @click.argument('stack')
 @handle_exception
 def update(stack):
@@ -183,7 +183,7 @@ def update(stack):
     echo_response(response)
 
 
-@click.command()
+@cli.command()
 @click.argument('stack')
 @handle_exception
 def events(stack):
@@ -204,7 +204,7 @@ def events(stack):
         )
 
 
-@click.command()
+@cli.command()
 @click.argument('stack')
 @handle_exception
 def show(stack):
@@ -213,7 +213,7 @@ def show(stack):
     echo_response(stack.status)
 
 
-@click.command()
+@cli.command()
 @click.argument('stack')
 @handle_exception
 def resources(stack):
@@ -234,7 +234,7 @@ def resources(stack):
         )
 
 
-@click.command()
+@cli.command()
 @click.argument('template-file')
 @handle_exception
 def validate(template_file):
@@ -245,7 +245,7 @@ def validate(template_file):
     echo_response(response)
 
 
-@click.command()
+@cli.command()
 @click.argument('stack')
 @click.option('--retain', multiple=True)
 @handle_exception
@@ -253,13 +253,3 @@ def delete(stack, retain):
     client = CfnClient()
     stack = Stack(client, stack)
     stack.delete(retain_resources=retain)
-
-
-cli.add_command(_list)
-cli.add_command(create)
-cli.add_command(update)
-cli.add_command(delete)
-cli.add_command(events)
-cli.add_command(show)
-cli.add_command(resources)
-cli.add_command(validate)
