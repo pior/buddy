@@ -22,5 +22,6 @@ deployment:
       - git pull origin
       - git merge pypi
       - git push origin master --tags
+      - rm -rf dist
       - python setup.py sdist bdist_wheel
       - twine upload -u $PYPI_USERNAME -p $PYPI_PASSWORD dist/*
