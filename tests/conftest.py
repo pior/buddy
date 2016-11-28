@@ -25,20 +25,11 @@ def aws_config(monkeypatch_session):
     )
 
 
-def assert_if_cwd_not_empty():
-    cwd = os.getcwd()
-    dir_content = os.listdir(cwd)
-    if dir_content:
-        raise Exception('Current working directory not empty:'
-                        ' %s: %s' % (cwd, dir_content))
-
-
 @pytest.fixture
 def runner():
     cli_runner = CliRunner()
     with cli_runner.isolated_filesystem():
         yield cli_runner
-        assert_if_cwd_not_empty()
 
 
 TEST_TEMPLATE = {

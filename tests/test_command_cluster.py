@@ -1,56 +1,15 @@
-import os
-import tempfile
-
 from buddy.command.cluster import cli
 import pytest
-import vcr
 import yaml
-import boto3
 
 
-def teardown():
-    ecs_client = boto3.client('ecs')
-    ecs_client.delete_service(cluster='CLUSTERNAME', service='SERVICENAME')
-    ecs_client.delete_cluster(cluster='CLUSTERNAME')
-
-
-def setup():
-    ecs_client = boto3.client('ecs')
-
-    containers = [
-        {
-            'name': 'NAME',
-            'image': 'nginx',
-            'memory': 10,
-        }
-    ]
-    response = ecs_client.register_task_definition(
-        family='TASKNAME',
-        containerDefinitions=containers,
-    )
-    task_definition_arn = response['taskDefinition']['taskDefinitionArn']
-
-    response = ecs_client.create_cluster(clusterName='CLUSTERNAME')
-    ecs_cluster = response['cluster']['clusterName']
-
-    response = ecs_client.create_service(
-        cluster=ecs_cluster,
-        serviceName='SERVICENAME',
-        taskDefinition=task_definition_arn,
-        desiredCount=0,
-
-    )
-    ecs_service = response['service']['serviceName']
-
-    return ecs_cluster, ecs_service
-
-
-def make_deploy_config_data(cluster, service):
+@pytest.fixture
+def data():
     return {
         'targets': {
             'production': {
-                'cluster': cluster,
-                'service': service,
+                'cluster': 'CLUSTERNAME',
+                'service': 'SERVICENAME',
                 'task': 'TASKNAME',
                 'environment': 'ENVNAME',
             },
@@ -81,31 +40,41 @@ def make_deploy_config_data(cluster, service):
     }
 
 
-def deploy_config(ecs_service, ecs_cluster):
-    data = make_deploy_config_data(cluster=ecs_cluster, service=ecs_service)
-    fh, name = tempfile.mkstemp()
-    fh.write(yaml.safe_dump(data))
-    fh.close()
+def write_config(data):
+    name = 'config.yaml'
+    with open(name, 'w') as fh:
+        fh.write(yaml.safe_dump(data))
     return name
 
 
-@vcr.use_cassette('tests/vcr/deploy.yaml')
-def test_deploy():
-    cluster, service = setup()
-    config = deploy_config(cluster, service)
+def test_nominal(runner, data):
+    config = write_config(data)
 
-    try:
-        args = ['deploy', config, 'production', 'image:tag', 'rev']
-        # result = runner.invoke(cli, args, catch_exceptions=True)
+    args = ['deploy', '--dry-run', config, 'production', 'image:tag', 'rev']
+    result = runner.invoke(cli, args)
 
-        # print(result.output)
+    assert not result.exception
 
-        # assert result.exit_code == 0
+    assert 'awslogs-group: TASKNAME' in result.output
+    assert 'awslogs-region: us-east-1' in result.output
+    assert 'awslogs-stream-prefix: rev' in result.output
+    assert 'command: [prog, arg1, arg2]' in result.output
+    assert 'cpu: 10' in result.output
+    assert 'environment:' in result.output
+    assert 'image: image:tag' in result.output
+    assert 'logDriver: awslogs' in result.output
+    assert 'memory: 20' in result.output
+    assert 'name: CONTAINERNAME' in result.output
+    assert '{name: VARIABLE_NAME, value: VARIABLE_VALUE}' in result.output
 
-        # assert 'CREATE_COMPLETE' in result.output
-    except:
-        try:
-            teardown()
-        except:
-            pass
-        raise
+
+def test_missing_port(runner, data):
+    data['containers']['CONTAINERNAME']['environment'].append('MISSINGVAR')
+    config = write_config(data)
+
+    args = ['deploy', '--dry-run', config, 'production', 'image:tag', 'rev']
+    result = runner.invoke(cli, args)
+
+    assert 'Unknown environment variable' in result.output
+    assert 'MISSINGVAR' in result.output
+    assert result.exit_code == 1
